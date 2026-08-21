@@ -1,4 +1,3 @@
-
 import 'idura_verify_platform_interface.dart';
 
 class IduraVerify {
