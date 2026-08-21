@@ -35,7 +35,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: eu.idura.verify.idura_verify
+        package: eu.idura.verify.flutter
         pluginClass: IduraVerifyPlugin
       ios:
         pluginClass: IduraVerifyPlugin

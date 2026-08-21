@@ -1,4 +1,4 @@
-group = "eu.idura.verify.idura_verify"
+group = "eu.idura.verify.flutter"
 version = "1.0-SNAPSHOT"
 
 buildscript {
@@ -26,7 +26,7 @@ plugins {
 }
 
 android {
-    namespace = "eu.idura.verify.idura_verify"
+    namespace = "eu.idura.verify.flutter"
 
     compileSdk = 36
 

@@ -1,4 +1,4 @@
-package eu.idura.verify.idura_verify
+package eu.idura.verify.flutter
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
