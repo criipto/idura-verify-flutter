@@ -19,7 +19,8 @@ android {
         applicationId = "eu.idura.verify.idura_verify_example"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // idura_verify requires 26, above Flutter's default of 24.
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)
@@ -27,6 +28,12 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // eu.idura:verify's manifest registers the redirect receiver activity with
+        // android:host="${iduraDomain}" and leaves the placeholder unresolved, so
+        // every consuming app has to supply it or the manifest merger fails. Same
+        // tenant the native Android example uses.
+        manifestPlaceholders["iduraDomain"] = "samples.test.idura.broker"
     }
 
     buildTypes {
