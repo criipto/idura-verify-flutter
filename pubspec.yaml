@@ -1,11 +1,27 @@
 name: idura_verify
-description: "A new Flutter plugin project."
+description: >-
+  Accept Danish MitID, Swedish BankID, Norwegian BankID, Vipps and Freja ID
+  eID logins in your Flutter app with Idura Verify.
 version: 0.0.1
-homepage:
+homepage: https://www.idura.eu
+repository: https://github.com/criipto/idura-verify-flutter
+issue_tracker: https://github.com/criipto/idura-verify-flutter/issues
+topics:
+  - authentication
+  - oidc
+  - eid
+  - mitid
+  - bankid
 
 environment:
-  sdk: ^3.13.1
-  flutter: '>=3.3.0'
+  # Dart 3.12.0 is what Flutter 3.44.0 ships, so this tracks the Flutter floor
+  # rather than the SDK we happen to develop against.
+  sdk: ^3.12.0
+  # Swift Package Manager became the default in 3.44, and it is also the first
+  # version that generates the FlutterFramework package our iOS Package.swift
+  # depends on. We ship no podspec, so there is no CocoaPods fallback below this.
+  # See DEVELOPING.md.
+  flutter: '>=3.44.0'
 
 dependencies:
   flutter:
