@@ -1,4 +1,4 @@
-package eu.idura.verify.idura_verify_example
+package eu.idura.verify.flutter.example
 
 import io.flutter.embedding.android.FlutterActivity
 

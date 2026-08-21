@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-  namespace = "eu.idura.verify.idura_verify_example"
+  namespace = "eu.idura.verify.flutter.example"
   compileSdk = flutter.compileSdkVersion
   ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
   defaultConfig {
     // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-    applicationId = "eu.idura.verify.idura_verify_example"
+    applicationId = "eu.idura.verify.flutter.example"
     // You can update the following values to match your application needs.
     // For more information, see: https://flutter.dev/to/review-gradle-config.
     // idura_verify requires 26, above Flutter's default of 24.

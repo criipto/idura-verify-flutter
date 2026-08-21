@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="idura_verify_example"
+        android:label="Idura Verify Example"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
