@@ -47,6 +47,34 @@ Swift Package Manager is the default from Flutter 3.44, which is also the first
 version that generates the `FlutterFramework` package our `Package.swift` depends on.
 Hence the `>= 3.44.0` floor.
 
+## Clone into a directory named `idura_verify`
+
+```sh
+git clone git@github.com:criipto/idura-verify-flutter.git idura_verify
+```
+
+Not cosmetic: with any other directory name, `flutter build ios` in `example/` fails
+to resolve packages with
+
+> unable to override package 'idura_verify' because its identity
+> 'idura-verify-flutter' doesn't match override's identity (directory name)
+> 'idura_verify'
+
+`flutter_tools` symlinks the plugin into
+`example/ios/Flutter/ephemeral/Packages/.packages/` under the *plugin root
+directory's* basename, and SwiftPM derives the dependency's package identity from
+that basename. Because the plugin root is an ancestor of the example's Xcode
+project, Xcode also registers `ios/idura_verify` as a graph root, and
+`Workspace+Manifests.swift` rejects a root that shares a package name with a
+dependency resolved from a different location. The two only agree when the checkout
+directory is named `idura_verify`, matching the `ios/<plugin_name>` directory that
+`flutter_tools` requires.
+
+This affects **only this repository's own example app**. Consumers are unaffected:
+their plugin directory (`idura_verify-1.2.3` in the pub cache) is not an ancestor of
+their project, so it is a plain dependency and never a root. `pub` canonicalises
+symlinked path dependencies, so a symlink inside `example/` does not work around it.
+
 ## Why iOS testing needs a physical device
 
 The OAuth callback arrives through an `ASWebAuthenticationSession` HTTPS
