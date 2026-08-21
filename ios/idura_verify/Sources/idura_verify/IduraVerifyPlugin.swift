@@ -13,7 +13,10 @@ public class IduraVerifyPlugin: NSObject, FlutterPlugin {
     case "getPlatformVersion":
       result("iOS " + UIDevice.current.systemVersion)
     default:
-      result(FlutterMethodNotImplemented)
+      // Not `FlutterMethodNotImplemented`: it is imported from Objective-C as a
+      // mutable global, which Swift 6 language mode rejects as shared mutable
+      // state. Pigeon replaces this channel, so an equivalent error will do.
+      result(FlutterError(code: "unimplemented", message: "Unknown method \(call.method)", details: nil))
     }
   }
 }

@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,30 +6,29 @@ import PackageDescription
 let package = Package(
     name: "idura_verify",
     platforms: [
-        .iOS("15.0")
+        // Matches idura-verify-ios. See README: the app's Runner target must set
+        // IPHONEOS_DEPLOYMENT_TARGET to 17.4 or higher for all configurations.
+        .iOS("17.4")
     ],
     products: [
+        // The product name must stay hyphenated: flutter_tools derives it as
+        // plugin.name.replaceAll('_', '-'), and SwiftPM uses it as the framework's
+        // CFBundleIdentifier, which cannot contain underscores.
         .library(name: "idura-verify", targets: ["idura_verify"])
     ],
     dependencies: [
-        .package(name: "FlutterFramework", path: "../FlutterFramework")
+        .package(name: "FlutterFramework", path: "../FlutterFramework"),
+        .package(url: "https://github.com/criipto/idura-verify-ios", from: "2.0.2")
     ],
     targets: [
         .target(
             name: "idura_verify",
             dependencies: [
-                .product(name: "FlutterFramework", package: "FlutterFramework")
+                .product(name: "FlutterFramework", package: "FlutterFramework"),
+                .product(name: "IduraVerify", package: "idura-verify-ios")
             ],
             resources: [
-                // If your plugin requires a privacy manifest, for example if it uses any required
-                // reason APIs, update the PrivacyInfo.xcprivacy file to describe your plugin's
-                // privacy impact, and then uncomment these lines. For more information, see
-                // https://developer.apple.com/documentation/bundleresources/privacy_manifest_files
-                // .process("PrivacyInfo.xcprivacy"),
-
-                // If you have other resources that need to be bundled with your plugin, refer to
-                // the following instructions to add them:
-                // https://developer.apple.com/documentation/xcode/bundling-resources-with-a-swift-package
+                .process("PrivacyInfo.xcprivacy")
             ]
         )
     ]
