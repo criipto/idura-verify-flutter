@@ -1,0 +1,14 @@
+root = true
+
+[*]
+indent_size = 2
+max_line_length=100
+
+[*.kt]
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# `dart format` owns Dart formatting; this only keeps editors from disagreeing with
+# it. The page width is configured in analysis_options.yaml, not here.
+[*.dart]
+indent_size = 2
+max_line_length = 80
