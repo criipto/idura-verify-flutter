@@ -45,6 +45,10 @@ CocoaPods is **not** required, and is not supported — see "iOS is SwiftPM-only
 
 Change the schema and its output in the same commit, or CI fails on the next PR.
 
+[`.gitattributes`](.gitattributes) marks the three files `linguist-generated`, so GitHub
+collapses them in a pull request diff. If a diff looks suspiciously small, that is why —
+expand it, or read `pigeons/messages.dart`, which is the part worth reviewing anyway.
+
 ## Why we do not support CocoaPods on iOS
 
 `idura-verify-ios` is distributed exclusively as a Swift package, and most of its
