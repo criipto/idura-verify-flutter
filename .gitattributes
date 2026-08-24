@@ -1,0 +1,7 @@
+# Pigeon's output. Committed on purpose (see DEVELOPING.md), but it is not code
+# anyone should read or review: `linguist-generated` collapses it in pull request
+# diffs and keeps it out of the repository's language statistics, so a schema
+# change reviews as the handful of lines in pigeons/messages.dart that caused it.
+*.g.dart linguist-generated=true
+*.g.kt linguist-generated=true
+*.g.swift linguist-generated=true

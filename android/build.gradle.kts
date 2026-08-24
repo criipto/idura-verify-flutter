@@ -84,6 +84,11 @@ dependencies {
   // disagree with.
   api("eu.idura:verify:2.0.4")
 
+  // Pigeon's generated code imports kotlinx.coroutines directly for the @async
+  // method, so we declare it rather than leaning on the transitive copy that
+  // eu.idura:verify happens to bring along.
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+
   testImplementation("org.jetbrains.kotlin:kotlin-test")
   testImplementation("org.mockito:mockito-core:5.0.0")
 }
