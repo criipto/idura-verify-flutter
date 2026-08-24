@@ -1,0 +1,13 @@
+disabled_rules:
+  - trailing_comma
+
+included:
+  - ios/idura_verify/Sources
+  - ios/idura_verify/Package.swift
+
+# The Pigeon-generated bridge is not ours to style.
+excluded:
+  - ios/idura_verify/Sources/idura_verify/Messages.g.swift
+
+opening_brace:
+  ignore_multiline_type_headers: true
