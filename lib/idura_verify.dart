@@ -5,7 +5,7 @@
 /// is package-private, including the generated Pigeon bridge.
 library;
 
-export 'src/acr_values.dart';
+export 'src/eid.dart';
 export 'src/exceptions.dart';
 export 'src/jwt.dart';
 export 'src/login_result.dart';
