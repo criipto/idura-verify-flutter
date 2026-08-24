@@ -6,8 +6,7 @@
 # Generated files are excluded throughout. Pigeon's output is committed verbatim
 # so scripts/verify-generated.sh can diff it byte for byte, which means it must
 # not be reformatted to satisfy a linter. Kotlin is excluded via .editorconfig,
-# Swift via .swiftlint.yml, and Dart below — `dart format` has no ignore file, so
-# the exclusion has to live in the invocation.
+# Swift via .swiftlint.yml, and Dart via scripts/format.sh.
 
 set -euo pipefail
 
@@ -15,17 +14,14 @@ cd "$(dirname "$0")/.."
 
 if command -v fvm >/dev/null 2>&1; then
   flutter=(fvm flutter)
-  dart=(fvm dart)
 else
   flutter=(flutter)
-  dart=(dart)
 fi
 
 status=0
 
 echo "==> dart format"
-git ls-files '*.dart' | grep -v '\.g\.dart$' |
-  xargs "${dart[@]}" format --output=none --set-exit-if-changed || status=1
+./scripts/format.sh --check || status=1
 
 echo "==> flutter analyze"
 "${flutter[@]}" analyze --fatal-infos || status=1

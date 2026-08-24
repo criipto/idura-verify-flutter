@@ -27,6 +27,24 @@ Beyond Flutter you need:
 
 CocoaPods is **not** required, and is not supported — see "iOS is SwiftPM-only".
 
+## Scripts
+
+| Script | What it does |
+| --- | --- |
+| `scripts/lint.sh` | Every static check CI runs: format, analyze, ktlint, swiftlint |
+| `scripts/format.sh` | Rewrites hand-written Dart. `--check` reports instead, for CI |
+| `scripts/generate.sh` | Regenerates the bridge from [`pigeons/messages.dart`](pigeons/messages.dart) |
+| `scripts/verify-generated.sh` | Fails if the committed bridge no longer matches the schema |
+
+**Never reformat generated code.** `Messages.g.dart`, `Messages.g.kt` and
+`Messages.g.swift` are committed exactly as pigeon emits them, which is what lets
+`verify-generated.sh` be a plain regenerate-and-diff. Pigeon's Dart output is *not*
+`dart format`-clean, so `dart format lib` silently breaks the drift check — use
+`scripts/format.sh`, which excludes `*.g.dart`. The Kotlin exclusion lives in
+`.editorconfig` and the Swift one in `.swiftlint.yml`.
+
+Change the schema and its output in the same commit, or CI fails on the next PR.
+
 ## Why we do not support CocoaPods on iOS
 
 `idura-verify-ios` is distributed exclusively as a Swift package, and most of its
