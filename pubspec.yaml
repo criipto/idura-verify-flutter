@@ -31,6 +31,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Pinned exactly, not a caret range: the generated bridge is committed and
+  # checked for drift, so a patch bump that changes output would fail CI on an
+  # unrelated PR. Bump it deliberately and regenerate in the same commit.
+  pigeon: 28.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
