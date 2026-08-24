@@ -52,11 +52,21 @@ android {
     // eu.idura:verify requires 26; consuming apps must raise their own floor to
     // match, since the manifest merger refuses a lower app minSdk.
     minSdk = 26
+
+    // Deliberately no manifestPlaceholders. Setting one here would substitute it
+    // into our own manifest and ship that value in the AAR, so ${iduraDomain} and
+    // ${iduraClientId} have to reach us unresolved for the consuming app to fill.
   }
 
   testOptions {
     unitTests {
-      isIncludeAndroidResources = true
+      // Off so processDebugUnitTestManifest never runs. Unlike a library manifest,
+      // the unit-test one merges dependency AARs, so it meets both our own
+      // placeholders and eu.idura:verify's ${iduraDomain} and fails on all three.
+      // The only alternative is giving them values here, which would then ship in
+      // the AAR. Nothing in src/test needs Android resources; adding Robolectric
+      // later would mean revisiting this.
+      isIncludeAndroidResources = false
       all {
         it.useJUnitPlatform()
 
@@ -82,7 +92,7 @@ dependencies {
   // screens should see eu.idura.verify.* on their own compile classpath rather
   // than having to declare the same dependency twice at a version we might
   // disagree with.
-  api("eu.idura:verify:2.0.4")
+  api("eu.idura:verify:2.0.7")
 
   // Pigeon's generated code imports kotlinx.coroutines directly for the @async
   // method, so we declare it rather than leaning on the transitive copy that
@@ -90,5 +100,4 @@ dependencies {
   implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
 
   testImplementation("org.jetbrains.kotlin:kotlin-test")
-  testImplementation("org.mockito:mockito-core:5.0.0")
 }
