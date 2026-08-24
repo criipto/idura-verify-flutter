@@ -12,3 +12,10 @@ ktlint_function_naming_ignore_when_annotated_with = Composable
 [*.dart]
 indent_size = 2
 max_line_length = 80
+
+# Pigeon's output is committed verbatim so scripts/verify-generated.sh can diff it
+# byte for byte. Reformatting or hand-fixing it would break that, so it is not
+# linted at all. The Swift and Dart equivalents live in .swiftlint.yml and
+# scripts/lint.sh.
+[**/*.g.kt]
+ktlint = disabled

@@ -29,7 +29,13 @@ let package = Package(
             ],
             resources: [
                 .process("PrivacyInfo.xcprivacy")
-            ]
+            ],
+            // swift-tools-version 6.0 would otherwise select Swift 6 language mode,
+            // under which Pigeon's generated setUp does not compile: it sends the
+            // non-Sendable `api` existential and `reply` closure into a
+            // `Task { @MainActor in }`, which is a hard error rather than a warning.
+            // No SwiftOptions flag avoids it, so the whole target stays on v5.
+            swiftSettings: [.swiftLanguageMode(.v5)]
         )
     ]
 )
