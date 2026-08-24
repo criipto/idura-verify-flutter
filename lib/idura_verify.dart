@@ -7,6 +7,8 @@ library;
 
 export 'src/acr_values.dart';
 export 'src/exceptions.dart';
+export 'src/jwt.dart';
+export 'src/login_result.dart';
 // The generated bridge is an implementation detail, but these two are part of
 // the public surface, so they are re-exported by name rather than duplicated
 // into hand-written enums that could drift from the schema.
