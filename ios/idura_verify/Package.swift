@@ -18,7 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework"),
-        .package(url: "https://github.com/criipto/idura-verify-ios", from: "2.0.2")
+        .package(url: "https://github.com/criipto/idura-verify-ios", from: "3.0.0")
     ],
     targets: [
         .target(
