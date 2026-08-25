@@ -547,20 +547,29 @@ data class NativeFlowAlreadyInProgress (
 /** Generated class from Pigeon that represents data sent in messages. */
 data class NativeNotConfigured (
   val code: NotConfiguredCode,
-  val message: String
+  val message: String,
+  /**
+   * Null for every Android code and for the iOS ones raised while reading the
+   * configuration, because those all happen before a flow exists. Set for
+   * [NotConfiguredCode.associatedDomainsNotConfigured], which iOS only learns
+   * about once `ASWebAuthenticationSession` has already failed inside a span.
+   */
+  val traceId: String? = null
 ) : NativeLoginResult()
  {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): NativeNotConfigured {
       val code = pigeonVar_list[0] as NotConfiguredCode
       val message = pigeonVar_list[1] as String
-      return NativeNotConfigured(code, message)
+      val traceId = pigeonVar_list[2] as String?
+      return NativeNotConfigured(code, message, traceId)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
       code,
       message,
+      traceId,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -571,17 +580,18 @@ data class NativeNotConfigured (
       return true
     }
     val other = other as NativeNotConfigured
-    return MessagesPigeonUtils.deepEquals(this.code, other.code) && MessagesPigeonUtils.deepEquals(this.message, other.message)
+    return MessagesPigeonUtils.deepEquals(this.code, other.code) && MessagesPigeonUtils.deepEquals(this.message, other.message) && MessagesPigeonUtils.deepEquals(this.traceId, other.traceId)
   }
 
   override fun hashCode(): Int {
     var result = javaClass.hashCode()
     result = 31 * result + MessagesPigeonUtils.deepHash(this.code)
     result = 31 * result + MessagesPigeonUtils.deepHash(this.message)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.traceId)
     return result
   }
   override fun toString(): String {
-    return "NativeNotConfigured(code=$code, message=$message)"
+    return "NativeNotConfigured(code=$code, message=$message, traceId=$traceId)"
   }
 }
 

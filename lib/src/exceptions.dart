@@ -111,9 +111,18 @@ class LoginAlreadyInProgressException extends IduraVerifyException {
 /// Every case is a mistake in the host app's configuration rather than anything
 /// the user did, and [message] names the specific fix. Match on [code] if you
 /// want to react programmatically.
+///
+/// [traceId] is usually null: most of these are detected before a login starts,
+/// so there is no span to attach one to. The exception is
+/// [NotConfiguredCode.associatedDomainsNotConfigured], which iOS only discovers
+/// once the browser session has already failed.
 class NotConfiguredException extends IduraVerifyException {
   /// Creates an exception. Not intended to be called outside this package.
-  const NotConfiguredException({required this.code, required super.message});
+  const NotConfiguredException({
+    required this.code,
+    required super.message,
+    super.traceId,
+  });
 
   /// Which setup mistake this is.
   final NotConfiguredCode code;

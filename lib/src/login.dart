@@ -104,8 +104,12 @@ Future<LoginResult> login(
             );
     case NativeFlowAlreadyInProgress(:final traceId):
       throw LoginAlreadyInProgressException(traceId: traceId);
-    case NativeNotConfigured(:final code, :final message):
-      throw NotConfiguredException(code: code, message: message);
+    case NativeNotConfigured(:final code, :final message, :final traceId):
+      throw NotConfiguredException(
+        code: code,
+        message: message,
+        traceId: traceId,
+      );
     case NativeInternalError(:final message, :final traceId):
       throw IduraVerifyInternalException(message: message, traceId: traceId);
   }
