@@ -213,18 +213,19 @@ enum NotConfiguredCode: Int, CaseIterable {
   case missingDomain = 0
   case missingClientId = 1
   case invalidDomain = 2
-  case hostActivityNotComponentActivity = 3
+  /// Android: the host activity does not implement `LifecycleOwner`, which the
+  /// SDK follows to know when to initialise and when to release what it holds.
+  /// Both Flutter activity base classes are one, so this needs a hand-rolled
+  /// host to reach.
+  case hostActivityNotLifecycleOwner = 3
   /// Android: the native SDK allows one instance per activity, and two Flutter
   /// engines sharing an activity each construct their own. Plugin instances are
   /// per engine, so nothing the host app wrote is wrong.
   case duplicateInstance = 4
-  /// Android: the redirect activity did not resolve, which in practice means
-  /// `manifestPlaceholders["iduraDomain"]` is missing.
-  case redirectActivityNotRegistered = 5
   /// iOS: the associated-domains entitlement is absent, which is also always
   /// true on the Simulator.
-  case associatedDomainsNotConfigured = 6
-  case noActivity = 7
+  case associatedDomainsNotConfigured = 5
+  case noActivity = 6
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
@@ -459,35 +460,41 @@ struct NativeOAuthError: NativeLoginResult {
   }
 }
 
-/// Android only: the SDK rejects a second concurrent browser flow.
+/// Android only: the SDK rejects a second concurrent login, before it makes any
+/// network request and without disturbing the one already running.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
 struct NativeFlowAlreadyInProgress: NativeLoginResult {
+  var traceId: String? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> NativeFlowAlreadyInProgress? {
+    let traceId: String? = nilOrValue(pigeonVar_list[0])
 
     return NativeFlowAlreadyInProgress(
+      traceId: traceId
     )
   }
   func toList() -> [Any?] {
     return [
+      traceId
     ]
   }
   static func == (lhs: NativeFlowAlreadyInProgress, rhs: NativeFlowAlreadyInProgress) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return true
+    return MessagesPigeonInternal.deepEquals(lhs.traceId, rhs.traceId)
   }
 
   func hash(into hasher: inout Hasher) {
     hasher.combine("NativeFlowAlreadyInProgress")
+    MessagesPigeonInternal.deepHash(value: traceId, hasher: &hasher)
   }
 
   public var description: String {
-    return "NativeFlowAlreadyInProgress()"
+    return "NativeFlowAlreadyInProgress(traceId: \(String(describing: traceId)))"
   }
 }
 

@@ -237,20 +237,26 @@ void main() {
       );
     });
 
-    test('a concurrent flow', () async {
-      given(NativeFlowAlreadyInProgress());
+    test('a concurrent flow keeps the rejected call trace id', () async {
+      given(NativeFlowAlreadyInProgress(traceId: 'trace-concurrent'));
 
       await expectLater(
         login(Mock()),
-        throwsA(isA<LoginAlreadyInProgressException>()),
+        throwsA(
+          isA<LoginAlreadyInProgressException>().having(
+            (e) => e.traceId,
+            'traceId',
+            'trace-concurrent',
+          ),
+        ),
       );
     });
 
     test('a setup mistake keeps the code and the native message', () async {
       given(
         NativeNotConfigured(
-          code: NotConfiguredCode.hostActivityNotComponentActivity,
-          message: 'Change MainActivity to FlutterFragmentActivity.',
+          code: NotConfiguredCode.hostActivityNotLifecycleOwner,
+          message: 'MainActivity has to implement LifecycleOwner.',
         ),
       );
 
@@ -261,12 +267,12 @@ void main() {
               .having(
                 (e) => e.code,
                 'code',
-                NotConfiguredCode.hostActivityNotComponentActivity,
+                NotConfiguredCode.hostActivityNotLifecycleOwner,
               )
               .having(
                 (e) => e.message,
                 'message',
-                'Change MainActivity to FlutterFragmentActivity.',
+                'MainActivity has to implement LifecycleOwner.',
               )
               // No trace id: the flow never reached the backend.
               .having((e) => e.traceId, 'traceId', isNull),

@@ -237,7 +237,13 @@ enum class NotConfiguredCode(val raw: Int) {
   MISSING_DOMAIN(0),
   MISSING_CLIENT_ID(1),
   INVALID_DOMAIN(2),
-  HOST_ACTIVITY_NOT_COMPONENT_ACTIVITY(3),
+  /**
+   * Android: the host activity does not implement `LifecycleOwner`, which the
+   * SDK follows to know when to initialise and when to release what it holds.
+   * Both Flutter activity base classes are one, so this needs a hand-rolled
+   * host to reach.
+   */
+  HOST_ACTIVITY_NOT_LIFECYCLE_OWNER(3),
   /**
    * Android: the native SDK allows one instance per activity, and two Flutter
    * engines sharing an activity each construct their own. Plugin instances are
@@ -245,16 +251,11 @@ enum class NotConfiguredCode(val raw: Int) {
    */
   DUPLICATE_INSTANCE(4),
   /**
-   * Android: the redirect activity did not resolve, which in practice means
-   * `manifestPlaceholders["iduraDomain"]` is missing.
-   */
-  REDIRECT_ACTIVITY_NOT_REGISTERED(5),
-  /**
    * iOS: the associated-domains entitlement is absent, which is also always
    * true on the Simulator.
    */
-  ASSOCIATED_DOMAINS_NOT_CONFIGURED(6),
-  NO_ACTIVITY(7);
+  ASSOCIATED_DOMAINS_NOT_CONFIGURED(5),
+  NO_ACTIVITY(6);
 
   companion object {
     fun ofRaw(raw: Int): NotConfiguredCode? {
@@ -502,18 +503,24 @@ data class NativeOAuthError (
 }
 
 /**
- * Android only: the SDK rejects a second concurrent browser flow.
+ * Android only: the SDK rejects a second concurrent login, before it makes any
+ * network request and without disturbing the one already running.
  *
  * Generated class from Pigeon that represents data sent in messages.
  */
-class NativeFlowAlreadyInProgress  : NativeLoginResult() {
+data class NativeFlowAlreadyInProgress (
+  val traceId: String? = null
+) : NativeLoginResult()
+ {
   companion object {
     fun fromList(pigeonVar_list: List<Any?>): NativeFlowAlreadyInProgress {
-      return NativeFlowAlreadyInProgress()
+      val traceId = pigeonVar_list[0] as String?
+      return NativeFlowAlreadyInProgress(traceId)
     }
   }
   fun toList(): List<Any?> {
     return listOf(
+      traceId,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -523,15 +530,17 @@ class NativeFlowAlreadyInProgress  : NativeLoginResult() {
     if (this === other) {
       return true
     }
-    return true
+    val other = other as NativeFlowAlreadyInProgress
+    return MessagesPigeonUtils.deepEquals(this.traceId, other.traceId)
   }
 
   override fun hashCode(): Int {
     var result = javaClass.hashCode()
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.traceId)
     return result
   }
   override fun toString(): String {
-    return "NativeFlowAlreadyInProgress()"
+    return "NativeFlowAlreadyInProgress(traceId=$traceId)"
   }
 }
 

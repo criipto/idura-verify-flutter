@@ -88,8 +88,8 @@ Future<LoginResult> login(
               errorDescription: errorDescription,
               traceId: traceId,
             );
-    case NativeFlowAlreadyInProgress():
-      throw const LoginAlreadyInProgressException();
+    case NativeFlowAlreadyInProgress(:final traceId):
+      throw LoginAlreadyInProgressException(traceId: traceId);
     case NativeNotConfigured(:final code, :final message):
       throw NotConfiguredException(code: code, message: message);
     case NativeInternalError(:final message, :final traceId):
