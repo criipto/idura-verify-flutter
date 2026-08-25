@@ -29,11 +29,15 @@ android {
     versionCode = flutter.versionCode
     versionName = flutter.versionName
 
-    // eu.idura:verify's manifest registers the redirect receiver activity with
-    // android:host="${iduraDomain}" and leaves the placeholder unresolved, so
-    // every consuming app has to supply it or the manifest merger fails. Same
-    // tenant the native Android example uses.
+    // The only place Idura Verify is configured. Both values land in manifest
+    // placeholders that eu.idura:verify and idura_verify leave unresolved — the
+    // SDK's for its redirect activity's android:host, the plugin's for the
+    // <meta-data> it reads at runtime — so forgetting one fails the build rather
+    // than the login. Same tenant the native Android example uses.
     manifestPlaceholders["iduraDomain"] = "samples.test.idura.broker"
+    // TODO(phase6): register this client id, along with the applicationId above
+    // and the debug signing SHA-256, for the samples tenant in the dashboard.
+    manifestPlaceholders["iduraClientId"] = "urn:criipto:samples:idura:verify-flutter"
   }
 
   buildTypes {

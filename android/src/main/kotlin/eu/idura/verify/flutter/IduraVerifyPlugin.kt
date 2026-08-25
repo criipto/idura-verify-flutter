@@ -1,38 +1,175 @@
 package eu.idura.verify.flutter
 
+import android.content.Intent
+import android.util.Log
+import eu.idura.verify.IduraVerify
 import io.flutter.embedding.engine.plugins.FlutterPlugin
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler
-import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.embedding.engine.plugins.activity.ActivityAware
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.PluginRegistry
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 
-/** IduraVerifyPlugin */
+private const val TAG = "IduraVerifyFlutter"
+
+/** Binds the Flutter `idura_verify` package to `eu.idura:verify`. */
 class IduraVerifyPlugin :
   FlutterPlugin,
-  MethodCallHandler {
-  // The MethodChannel that will the communication between Flutter and native Android
-  //
-  // This local reference serves to register the plugin with the Flutter Engine and unregister it
-  // when the Flutter Engine is detached from the Activity
-  private lateinit var channel: MethodChannel
+  ActivityAware,
+  PluginRegistry.ActivityResultListener,
+  IduraVerifyHostApi {
+  /**
+   * An attached activity, the scope its logins run on and the SDK instance built for
+   * it, as one object because they share one lifetime.
+   */
+  private class Attachment(
+    val binding: ActivityPluginBinding,
+  ) {
+    /**
+     * Bounds every login to this plugin's attachment, not to the host activity. Pigeon
+     * launches each call on an unstructured `CoroutineScope(Dispatchers.Main)` bound to
+     * no lifecycle, so without this a login whose result can no longer arrive would wait
+     * forever.
+     *
+     * `MainScope()` rather than the host's `lifecycleScope`. It is simply the wrong
+     * lifetime. `lifecycleScope` ends when the activity is destroyed, whereas what
+     * decides whether a pending login can still be answered is whether this plugin is
+     * still attached: on a plain `Activity` host the browser result reaches the SDK only
+     * through the [onActivityResult] listener registered in [onAttachedToActivity] and
+     * removed in [onDetachedFromActivity]. Those two moments differ —
+     * `FlutterFragment.onDetach` detaches the engine from an activity that goes on
+     * living — and there an activity-scoped job would keep waiting on a result nothing
+     * is left to deliver.
+     */
+    val scope: CoroutineScope = MainScope()
 
-  override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "idura_verify")
-    channel.setMethodCallHandler(this)
+    /** Null until the first [requireSdk], which is the only thing that assigns it. */
+    var sdk: IduraVerify? = null
+      private set
+
+    /**
+     * The SDK instance for this attachment's activity, building it if needed.
+     *
+     * Nothing checks that the activity still matches, because it cannot differ: the
+     * embedding detaches before every attach — `attachToActivity` calls
+     * `detachFromAppComponent()` first — so an instance never outlives the
+     * attachment that built it.
+     */
+    fun requireSdk(): IduraVerify = sdk ?: constructSdk(binding.activity).also { sdk = it }
   }
 
-  override fun onMethodCall(
-    call: MethodCall,
-    result: Result,
-  ) {
-    if (call.method == "getPlatformVersion") {
-      result.success("Android ${android.os.Build.VERSION.RELEASE}")
-    } else {
-      result.notImplemented()
-    }
+  private var attachment: Attachment? = null
+
+  override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+    IduraVerifyHostApi.setUp(binding.binaryMessenger, this)
   }
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-    channel.setMethodCallHandler(null)
+    IduraVerifyHostApi.setUp(binding.binaryMessenger, null)
   }
+
+  override fun onAttachedToActivity(binding: ActivityPluginBinding) {
+    val attachment = Attachment(binding)
+    this.attachment = attachment
+    binding.addActivityResultListener(this)
+
+    // Eagerly, purely to warm up: the constructor starts OIDC discovery and scans
+    // for a usable browser in the background, so the metadata is normally ready by
+    // the time the user taps a login button. Failures are not reported here —
+    // there is no Dart call to answer, and `login` will retry and carry the
+    // message across itself.
+    try {
+      attachment.requireSdk()
+    } catch (e: Exception) {
+      Log.d(TAG, "Deferring Idura Verify setup until the first login", e)
+    }
+  }
+
+  override fun onDetachedFromActivity() {
+    attachment?.let {
+      // Cancelling completes any in-flight login's Dart future with a typed error.
+      // It cannot be resumed: the SDK's continuation is tied to the activity's result
+      // registry, so once the activity is gone nothing would ever resume it.
+      it.scope.cancel()
+      it.binding.removeActivityResultListener(this)
+    }
+    // Which also discards the SDK instance, since the attachment owns it.
+    attachment = null
+  }
+
+  // A configuration change recreates the activity, which invalidates the SDK
+  // instance exactly as a real detach does, so both go down the same path.
+  override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) =
+    onAttachedToActivity(binding)
+
+  override fun onDetachedFromActivityForConfigChanges() = onDetachedFromActivity()
+
+  /**
+   * Hands the browser result to the SDK, for the hosts that cannot receive it
+   * themselves.
+   *
+   * `FlutterActivity` is a plain `Activity`, so it has no `ActivityResultRegistry` and
+   * the SDK launches the browser through `startActivityForResult` instead — this is
+   * the only way the answer gets back. `FlutterFragmentActivity` does have one and the
+   * SDK uses it, in which case `handleActivityResult` returns false and the result
+   * carries on down the listener chain untouched. Forwarding unconditionally is
+   * documented as safe for exactly that reason, which matters because a plugin cannot
+   * know which host it was given.
+   */
+  override fun onActivityResult(
+    requestCode: Int,
+    resultCode: Int,
+    data: Intent?,
+  ): Boolean = attachment?.sdk?.handleActivityResult(requestCode, resultCode, data) ?: false
+
+  override suspend fun login(request: NativeLoginRequest): NativeLoginResult {
+    val attachment =
+      this.attachment ?: return NativeNotConfigured(
+        code = NotConfiguredCode.NO_ACTIVITY,
+        message =
+          "Idura Verify has no activity to present the login flow from. Call login() while " +
+            "your Flutter UI is attached to an activity.",
+      )
+
+    // Setup diagnostics are settled before a scope is involved at all, because
+    // [Attachment.requireSdk] does not suspend. That leaves [Attachment.scope]
+    // standing for one thing only, a login that is actually in flight, so the
+    // cancellation below can mean only what its message says.
+    val sdk =
+      try {
+        attachment.requireSdk()
+      } catch (e: Exception) {
+        return e.toNativeLoginResult()
+      }
+
+    return try {
+      attachment.scope.async { runLogin(sdk, request) }.await()
+    } catch (e: CancellationException) {
+      // Only reachable via onDetachedFromActivity. We are running on pigeon's own
+      // scope, which is not cancelled, so returning a value here is legal and the
+      // reply still goes out.
+      NativeInternalError(
+        message =
+          "The login flow lost the activity presenting it before it completed. " +
+            "The login has to be started again.",
+      )
+    }
+  }
+
+  private suspend fun runLogin(
+    sdk: IduraVerify,
+    request: NativeLoginRequest,
+  ): NativeLoginResult =
+    try {
+      val result = sdk.login(request.toEid(), request.prompt?.toSdk())
+      NativeLoginSuccess(idToken = result.jwt.token, traceId = result.traceId)
+    } catch (e: CancellationException) {
+      // Ours, from onDetachedFromActivity. Let `login` answer it, above.
+      throw e
+    } catch (e: Exception) {
+      e.toNativeLoginResult()
+    }
 }

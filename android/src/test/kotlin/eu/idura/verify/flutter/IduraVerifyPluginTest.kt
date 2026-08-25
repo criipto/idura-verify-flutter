@@ -1,27 +1,32 @@
 package eu.idura.verify.flutter
 
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
-import org.mockito.Mockito
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
-
-/*
- * This demonstrates a simple unit test of the Kotlin portion of this plugin's implementation.
- *
- * Once you have built the plugin's example app, you can run these tests from the command
- * line by running `./gradlew testDebugUnitTest` in the `example/android/` directory, or
- * you can run them directly from IDEs that support JUnit such as Android Studio.
- */
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 internal class IduraVerifyPluginTest {
   @Test
-  fun onMethodCall_getPlatformVersion_returnsExpectedValue() {
-    val plugin = IduraVerifyPlugin()
+  fun `a login with no activity attached is a setup error, not a hang`() {
+    // The add-to-app case: Dart can outlive the activity, and pigeon's per-call
+    // scope is bound to no lifecycle, so a caller would otherwise wait forever.
+    val result =
+      runBlocking {
+        IduraVerifyPlugin().login(
+          NativeLoginRequest(
+            acrValues = "urn:grn:authn:mock",
+            scopes = emptyList(),
+            loginHints = emptyList(),
+          ),
+        )
+      }
 
-    val call = MethodCall("getPlatformVersion", null)
-    val mockResult: MethodChannel.Result = Mockito.mock(MethodChannel.Result::class.java)
-    plugin.onMethodCall(call, mockResult)
-
-    Mockito.verify(mockResult).success("Android " + android.os.Build.VERSION.RELEASE)
+    assertIs<NativeNotConfigured>(result)
+    assertEquals(NotConfiguredCode.NO_ACTIVITY, result.code)
   }
+
+  // The rest of the plugin is lifecycle wiring over Activity, ActivityPluginBinding
+  // and Dispatchers.Main, none of which exist in a JVM unit test. It is covered by
+  // running the example: the detach-mid-flow path in particular needs a cached
+  // engine outliving its activity, which no unit test can stage.
 }
