@@ -19,11 +19,17 @@ class FakeHostApi extends IduraVerifyHostApi {
   /// What [login] assembled, so the request is asserted on rather than assumed.
   NativeLoginRequest? lastRequest;
 
+  /// How often [warmUp] reached the bridge.
+  int warmUpCalls = 0;
+
   @override
   Future<NativeLoginResult> login(NativeLoginRequest request) async {
     lastRequest = request;
     return result;
   }
+
+  @override
+  Future<void> warmUp() async => warmUpCalls++;
 }
 
 /// Points [login] at a fake returning [result], and restores the real bridge
@@ -293,6 +299,25 @@ void main() {
               .having((e) => e.traceId, 'traceId', 'trace-6'),
         ),
       );
+    });
+  });
+
+  group('warmUp', () {
+    test('forwards to the bridge', () async {
+      final fake = given(NativeUserCancelled());
+
+      await warmUp();
+
+      expect(fake.warmUpCalls, 1);
+    });
+
+    test('does not throw for a login that has not happened', () async {
+      // The only contract worth asserting in Dart: warmUp reports nothing, so
+      // a caller never has to guard it. Every failure it could have reported is
+      // swallowed natively and comes back out of `login`.
+      given(NativeUserCancelled());
+
+      await expectLater(warmUp(), completes);
     });
   });
 }

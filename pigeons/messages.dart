@@ -156,4 +156,19 @@ class NativeInternalError extends NativeLoginResult {
 abstract class IduraVerifyHostApi {
   @async
   NativeLoginResult login(NativeLoginRequest request);
+
+  /// Builds the native SDK if it is not built yet, taking OIDC discovery, the
+  /// JWKS fetch and Android's scan for a usable browser off the login path.
+  ///
+  /// Returns nothing, and no result variant: there is nothing a caller could act
+  /// on, because a real misconfiguration surfaces from [login] as a
+  /// [NativeNotConfigured] either way. The native side logs instead, since a
+  /// warm-up that quietly does nothing is otherwise invisible while an
+  /// integration is being wired up.
+  ///
+  /// `@async` for the same reason [login] is: constructing the SDK is main-thread
+  /// work on both platforms, and only the generated suspending form puts the
+  /// bridge there.
+  @async
+  void warmUp();
 }

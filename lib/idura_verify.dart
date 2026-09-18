@@ -10,7 +10,7 @@ export 'src/exceptions.dart';
 export 'src/jwt.dart';
 // `show login` deliberately: the file also holds the mutable bridge this
 // package's own tests swap out, which is not part of the public surface.
-export 'src/login.dart' show login;
+export 'src/login.dart' show login, warmUp;
 export 'src/login_result.dart';
 // The generated bridge is an implementation detail, but these two are part of
 // the public surface, so they are re-exported by name rather than duplicated
