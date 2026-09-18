@@ -71,21 +71,16 @@ class IduraVerifyPlugin :
     IduraVerifyHostApi.setUp(binding.binaryMessenger, null)
   }
 
+  /**
+   * Notably does not construct the SDK. Attach happens at every engine-to-activity
+   * handover, which for most apps means app start, and constructing there would
+   * spend two requests plus a browser scan on the main thread whether or not the
+   * app ever shows a login button. [warmUp] is how an app asks for that work, and
+   * [login] does it if nobody asked.
+   */
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-    val attachment = Attachment(binding)
-    this.attachment = attachment
+    attachment = Attachment(binding)
     binding.addActivityResultListener(this)
-
-    // Eagerly, purely to warm up: the constructor starts OIDC discovery and scans
-    // for a usable browser in the background, so the metadata is normally ready by
-    // the time the user taps a login button. Failures are not reported here —
-    // there is no Dart call to answer, and `login` will retry and carry the
-    // message across itself.
-    try {
-      attachment.requireSdk()
-    } catch (e: Exception) {
-      Log.d(TAG, "Deferring Idura Verify setup until the first login", e)
-    }
   }
 
   override fun onDetachedFromActivity() {
