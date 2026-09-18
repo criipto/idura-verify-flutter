@@ -141,9 +141,15 @@ class NativeFlowAlreadyInProgress extends NativeLoginResult {
 }
 
 class NativeNotConfigured extends NativeLoginResult {
-  NativeNotConfigured(this.code, this.message);
+  NativeNotConfigured(this.code, this.message, this.traceId);
   NotConfiguredCode code;
   String message;
+
+  /// Null for every Android code and for the iOS ones raised while reading the
+  /// configuration, because those all happen before a flow exists. Set for
+  /// [NotConfiguredCode.associatedDomainsNotConfigured], which iOS only learns
+  /// about once `ASWebAuthenticationSession` has already failed inside a span.
+  String? traceId;
 }
 
 class NativeInternalError extends NativeLoginResult {

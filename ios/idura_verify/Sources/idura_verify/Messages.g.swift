@@ -502,39 +502,48 @@ struct NativeFlowAlreadyInProgress: NativeLoginResult {
 struct NativeNotConfigured: NativeLoginResult {
   var code: NotConfiguredCode
   var message: String
+  /// Null for every Android code and for the iOS ones raised while reading the
+  /// configuration, because those all happen before a flow exists. Set for
+  /// [NotConfiguredCode.associatedDomainsNotConfigured], which iOS only learns
+  /// about once `ASWebAuthenticationSession` has already failed inside a span.
+  var traceId: String? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
   static func fromList(_ pigeonVar_list: [Any?]) -> NativeNotConfigured? {
     let code = pigeonVar_list[0] as! NotConfiguredCode
     let message = pigeonVar_list[1] as! String
+    let traceId: String? = nilOrValue(pigeonVar_list[2])
 
     return NativeNotConfigured(
       code: code,
-      message: message
+      message: message,
+      traceId: traceId
     )
   }
   func toList() -> [Any?] {
     return [
       code,
       message,
+      traceId,
     ]
   }
   static func == (lhs: NativeNotConfigured, rhs: NativeNotConfigured) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return MessagesPigeonInternal.deepEquals(lhs.code, rhs.code) && MessagesPigeonInternal.deepEquals(lhs.message, rhs.message)
+    return MessagesPigeonInternal.deepEquals(lhs.code, rhs.code) && MessagesPigeonInternal.deepEquals(lhs.message, rhs.message) && MessagesPigeonInternal.deepEquals(lhs.traceId, rhs.traceId)
   }
 
   func hash(into hasher: inout Hasher) {
     hasher.combine("NativeNotConfigured")
     MessagesPigeonInternal.deepHash(value: code, hasher: &hasher)
     MessagesPigeonInternal.deepHash(value: message, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: traceId, hasher: &hasher)
   }
 
   public var description: String {
-    return "NativeNotConfigured(code: \(String(describing: code)), message: \(String(describing: message)))"
+    return "NativeNotConfigured(code: \(String(describing: code)), message: \(String(describing: message)), traceId: \(String(describing: traceId)))"
   }
 }
 

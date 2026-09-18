@@ -469,16 +469,24 @@ class NativeNotConfigured extends NativeLoginResult {
   NativeNotConfigured({
     required this.code,
     required this.message,
+    this.traceId,
   });
 
   NotConfiguredCode code;
 
   String message;
 
+  /// Null for every Android code and for the iOS ones raised while reading the
+  /// configuration, because those all happen before a flow exists. Set for
+  /// [NotConfiguredCode.associatedDomainsNotConfigured], which iOS only learns
+  /// about once `ASWebAuthenticationSession` has already failed inside a span.
+  String? traceId;
+
   List<Object?> _toList() {
     return <Object?>[
       code,
       message,
+      traceId,
     ];
   }
 
@@ -490,6 +498,7 @@ class NativeNotConfigured extends NativeLoginResult {
     return NativeNotConfigured(
       code: result[0]! as NotConfiguredCode,
       message: result[1]! as String,
+      traceId: result[2] as String?,
     );
   }
 
@@ -502,7 +511,7 @@ class NativeNotConfigured extends NativeLoginResult {
     if (identical(this, other)) {
       return true;
     }
-    return _deepEquals(code, other.code) && _deepEquals(message, other.message);
+    return _deepEquals(code, other.code) && _deepEquals(message, other.message) && _deepEquals(traceId, other.traceId);
   }
 
   @override
@@ -511,7 +520,7 @@ class NativeNotConfigured extends NativeLoginResult {
 
   @override
   String toString() {
-    return 'NativeNotConfigured(code: $code, message: $message)';
+    return 'NativeNotConfigured(code: $code, message: $message, traceId: $traceId)';
   }
 }
 
