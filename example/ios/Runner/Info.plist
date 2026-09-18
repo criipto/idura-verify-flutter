@@ -24,6 +24,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>IDURA_CLIENT_ID</key>
+	<string>$(IDURA_CLIENT_ID)</string>
+	<key>IDURA_DOMAIN</key>
+	<string>$(IDURA_DOMAIN)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
