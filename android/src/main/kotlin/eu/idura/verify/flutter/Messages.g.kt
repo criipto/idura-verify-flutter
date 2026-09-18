@@ -732,6 +732,21 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 /** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface IduraVerifyHostApi {
   suspend fun login(request: NativeLoginRequest): NativeLoginResult
+  /**
+   * Builds the native SDK if it is not built yet, taking OIDC discovery, the
+   * JWKS fetch and Android's scan for a usable browser off the login path.
+   *
+   * Returns nothing, and no result variant: there is nothing a caller could act
+   * on, because a real misconfiguration surfaces from [login] as a
+   * [NativeNotConfigured] either way. The native side logs instead, since a
+   * warm-up that quietly does nothing is otherwise invisible while an
+   * integration is being wired up.
+   *
+   * `@async` for the same reason [login] is: constructing the SDK is main-thread
+   * work on both platforms, and only the generated suspending form puts the
+   * bridge there.
+   */
+  suspend fun warmUp()
 
   companion object {
     /** The codec used by IduraVerifyHostApi. */
@@ -751,6 +766,24 @@ interface IduraVerifyHostApi {
             CoroutineScope(Dispatchers.Main).launch {
               val wrapped: List<Any?> = try {
                 listOf(api.login(requestArg))
+              } catch (exception: Throwable) {
+                MessagesPigeonUtils.wrapError(exception)
+              }
+              reply.reply(wrapped)
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.idura_verify.IduraVerifyHostApi.warmUp$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            CoroutineScope(Dispatchers.Main).launch {
+              val wrapped: List<Any?> = try {
+                api.warmUp()
+                listOf(null)
               } catch (exception: Throwable) {
                 MessagesPigeonUtils.wrapError(exception)
               }

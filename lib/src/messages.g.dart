@@ -670,4 +670,34 @@ class IduraVerifyHostApi {
     ;
     return pigeonVar_replyValue! as NativeLoginResult;
   }
+
+  /// Builds the native SDK if it is not built yet, taking OIDC discovery, the
+  /// JWKS fetch and Android's scan for a usable browser off the login path.
+  ///
+  /// Returns nothing, and no result variant: there is nothing a caller could act
+  /// on, because a real misconfiguration surfaces from [login] as a
+  /// [NativeNotConfigured] either way. The native side logs instead, since a
+  /// warm-up that quietly does nothing is otherwise invisible while an
+  /// integration is being wired up.
+  ///
+  /// `@async` for the same reason [login] is: constructing the SDK is main-thread
+  /// work on both platforms, and only the generated suspending form puts the
+  /// bridge there.
+  Future<void> warmUp() async {
+    final pigeonVar_channelName = 'dev.flutter.pigeon.idura_verify.IduraVerifyHostApi.warmUp$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+        pigeonVar_replyList,
+        pigeonVar_channelName,
+        isNullValid: true,
+    )
+    ;
+  }
 }

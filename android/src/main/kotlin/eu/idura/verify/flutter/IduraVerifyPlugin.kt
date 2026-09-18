@@ -125,6 +125,21 @@ class IduraVerifyPlugin :
     data: Intent?,
   ): Boolean = attachment?.sdk?.handleActivityResult(requestCode, resultCode, data) ?: false
 
+  override suspend fun warmUp() {
+    // No activity is not an error here. A warm-up is a hint, and the only thing a
+    // caller could do with the news is call login() anyway, which reports it properly.
+    val attachment = this.attachment ?: return
+
+    try {
+      attachment.requireSdk()
+    } catch (e: Exception) {
+      // Logged rather than returned, because there is no variant to return it in.
+      // A misconfigured app still fails at login() with the same message; this is
+      // only so the reason is visible while an integration is being wired up.
+      Log.w(TAG, "warmUp() could not build the Idura Verify SDK", e)
+    }
+  }
+
   override suspend fun login(request: NativeLoginRequest): NativeLoginResult {
     val attachment =
       this.attachment ?: return NativeNotConfigured(
