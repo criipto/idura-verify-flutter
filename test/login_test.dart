@@ -286,6 +286,32 @@ void main() {
       );
     });
 
+    test('a setup mistake found mid-flow keeps its trace id', () async {
+      // iOS only, and the one reason NativeNotConfigured carries a trace id at
+      // all: a missing associated-domains entitlement is invisible until
+      // ASWebAuthenticationSession has already failed inside a span.
+      given(
+        NativeNotConfigured(
+          code: NotConfiguredCode.associatedDomainsNotConfigured,
+          message: 'Add a webcredentials: entry for your Idura domain.',
+          traceId: 'trace-7',
+        ),
+      );
+
+      await expectLater(
+        login(Mock()),
+        throwsA(
+          isA<NotConfiguredException>()
+              .having(
+                (e) => e.code,
+                'code',
+                NotConfiguredCode.associatedDomainsNotConfigured,
+              )
+              .having((e) => e.traceId, 'traceId', 'trace-7'),
+        ),
+      );
+    });
+
     test('an internal failure', () async {
       given(
         NativeInternalError(message: 'Discovery failed', traceId: 'trace-6'),

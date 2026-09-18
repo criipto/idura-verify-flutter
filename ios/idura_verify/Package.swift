@@ -18,14 +18,23 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework"),
-        .package(url: "https://github.com/criipto/idura-verify-ios", from: "2.0.2")
+        .package(url: "https://github.com/criipto/idura-verify-ios", from: "3.0.0")
     ],
     targets: [
+        // One typealias, for a reason spelled out in the file itself. Not part of the
+        // product: nothing outside this package has any use for it.
+        .target(
+            name: "SdkAliases",
+            dependencies: [
+                .product(name: "IduraVerify", package: "idura-verify-ios")
+            ]
+        ),
         .target(
             name: "idura_verify",
             dependencies: [
                 .product(name: "FlutterFramework", package: "FlutterFramework"),
-                .product(name: "IduraVerify", package: "idura-verify-ios")
+                .product(name: "IduraVerify", package: "idura-verify-ios"),
+                "SdkAliases"
             ],
             resources: [
                 .process("PrivacyInfo.xcprivacy")
