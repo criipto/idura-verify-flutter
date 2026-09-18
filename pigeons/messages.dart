@@ -81,16 +81,17 @@ enum NotConfiguredCode {
   missingDomain,
   missingClientId,
   invalidDomain,
-  hostActivityNotComponentActivity,
+
+  /// Android: the host activity does not implement `LifecycleOwner`, which the
+  /// SDK follows to know when to initialise and when to release what it holds.
+  /// Both Flutter activity base classes are one, so this needs a hand-rolled
+  /// host to reach.
+  hostActivityNotLifecycleOwner,
 
   /// Android: the native SDK allows one instance per activity, and two Flutter
   /// engines sharing an activity each construct their own. Plugin instances are
   /// per engine, so nothing the host app wrote is wrong.
   duplicateInstance,
-
-  /// Android: the redirect activity did not resolve, which in practice means
-  /// `manifestPlaceholders["iduraDomain"]` is missing.
-  redirectActivityNotRegistered,
 
   /// iOS: the associated-domains entitlement is absent, which is also always
   /// true on the Simulator.
@@ -132,8 +133,12 @@ class NativeOAuthError extends NativeLoginResult {
   String? traceId;
 }
 
-/// Android only: the SDK rejects a second concurrent browser flow.
-class NativeFlowAlreadyInProgress extends NativeLoginResult {}
+/// Android only: the SDK rejects a second concurrent login, before it makes any
+/// network request and without disturbing the one already running.
+class NativeFlowAlreadyInProgress extends NativeLoginResult {
+  NativeFlowAlreadyInProgress(this.traceId);
+  String? traceId;
+}
 
 class NativeNotConfigured extends NativeLoginResult {
   NativeNotConfigured(this.code, this.message);

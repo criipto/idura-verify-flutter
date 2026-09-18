@@ -1,2 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Configuration reaches the plugin through the same manifest placeholders
+         eu.idura:verify already requires for its redirect activity's
+         android:host, so a consuming app declares each value exactly once, in
+         Gradle. AGP leaves a library's unresolved placeholders for the app to
+         substitute, which is how the SDK's own ${iduraDomain} works.
+
+         Deliberately no default: a missing placeholder must stay a build error
+         naming the one the app forgot. -->
+    <application>
+        <meta-data
+            android:name="eu.idura.verify.domain"
+            android:value="${iduraDomain}" />
+        <meta-data
+            android:name="eu.idura.verify.clientId"
+            android:value="${iduraClientId}" />
+    </application>
 </manifest>

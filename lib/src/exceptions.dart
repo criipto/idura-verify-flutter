@@ -89,11 +89,16 @@ class NoSuitableBrowserException extends IduraVerifyException {
 
 /// Android only: a login was started while another was still in the browser.
 ///
-/// The native SDK allows one flow at a time. Disable your login button until
-/// the pending future completes.
+/// The native SDK allows one flow at a time, because a browser result carries
+/// nothing that says which of several pending logins it belongs to. The
+/// overlapping call is turned away before it reaches the network and the login
+/// already running is untouched, so awaiting that one is the fix — or disable
+/// your login button until its future completes.
+///
+/// [traceId] is the rejected call's, not the running login's.
 class LoginAlreadyInProgressException extends IduraVerifyException {
   /// Creates an exception. Not intended to be called outside this package.
-  const LoginAlreadyInProgressException()
+  const LoginAlreadyInProgressException({super.traceId})
     : super(
         message:
             'A login is already in progress. Wait for the pending login to '
