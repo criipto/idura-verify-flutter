@@ -108,8 +108,8 @@ working with no useful error.
 | Client id | `urn:criipto:samples:idura:verify-flutter` |
 | Android package name | `eu.idura.verify.flutter.example` |
 | Android signing cert SHA-256 | `8D:42:58:35:AE:15:03:2D:D6:BD:6B:76:79:CC:61:CF:F1:DB:4C:28:0C:F2:92:B4:19:28:77:FA:46:DE:2B:77` |
-| iOS bundle id | `eu.idura.verify.iduraVerifyExample` |
-| iOS App ID (team + bundle) | `P56KU6NT8A.eu.idura.verify.iduraVerifyExample` |
+| iOS bundle id | `eu.idura.verify.flutter.example` |
+| iOS App ID (team + bundle) | `P56KU6NT8A.eu.idura.verify.flutter.example` |
 
 The Android SHA-256 comes from `example/android/app/debug.keystore`, which is
 **deliberately checked in** — it is the stock Android debug keystore, password
