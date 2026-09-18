@@ -14,6 +14,20 @@ import 'messages.g.dart';
 /// what replaces it.
 IduraVerifyHostApi hostApi = IduraVerifyHostApi();
 
+/// Builds the native SDK ahead of the first [login], taking OIDC discovery, the
+/// JWKS fetch and — on Android — the scan for a usable browser off the login
+/// path.
+///
+/// Entirely optional: [login] builds the SDK itself when it has to. Call it once
+/// a login becomes likely, typically from `initState` on the screen that logs in.
+/// Idempotent, and cheap once warm.
+///
+/// Reports nothing, because a real misconfiguration surfaces from [login] as a
+/// [NotConfiguredException] either way. The native side logs the reason instead —
+/// under `IduraVerifyFlutter` in logcat, or via `NSLog` on iOS — so it is visible
+/// while an integration is being wired up.
+Future<void> warmUp() => hostApi.warmUp();
+
 /// Logs the user in with [eid] and returns their natively verified ID token.
 ///
 /// There is nothing to initialise first: the domain and client id are read from
