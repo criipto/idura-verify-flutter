@@ -14,6 +14,24 @@ android {
     targetCompatibility = JavaVersion.VERSION_17
   }
 
+  signingConfigs {
+    getByName("debug") {
+      // Checked in, replacing the per-developer ~/.android/debug.keystore AGP
+      // would otherwise generate. Digital Asset Links binds a (package name,
+      // signing-cert SHA-256) pair, so with a per-machine keystore the App Link
+      // the login callback arrives on would only ever verify for whoever
+      // registered their own cert.
+      //
+      // Byte-for-byte the same keystore idura-verify-android's example checks in.
+      // Not a secret: it is the stock Android debug keystore, password and all,
+      // and it signs nothing that is published.
+      storeFile = file("debug.keystore")
+      storePassword = "android"
+      keyAlias = "androiddebugkey"
+      keyPassword = "android"
+    }
+  }
+
   defaultConfig {
     // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
     applicationId = "eu.idura.verify.flutter.example"
@@ -33,10 +51,13 @@ android {
     // placeholders that eu.idura:verify and idura_verify leave unresolved — the
     // SDK's for its redirect activity's android:host, the plugin's for the
     // <meta-data> it reads at runtime — so forgetting one fails the build rather
-    // than the login. Same tenant the native Android example uses.
-    manifestPlaceholders["iduraDomain"] = "samples.test.idura.broker"
-    // TODO(phase6): register this client id, along with the applicationId above
-    // and the debug signing SHA-256, for the samples tenant in the dashboard.
+    // than the login. Not the native Android example's tenant: two apps claiming
+    // one verified domain can send the login callback to the wrong one.
+    manifestPlaceholders["iduraDomain"] = "samples-flutter.test.idura.broker"
+    // Registered for that tenant against the applicationId above and the signing
+    // cert in signingConfigs below. Change any of the three and the login callback
+    // stops arriving — see DEVELOPING.md, "What the example's tenant has
+    // registered".
     manifestPlaceholders["iduraClientId"] = "urn:criipto:samples:idura:verify-flutter"
   }
 
