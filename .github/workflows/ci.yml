@@ -1,0 +1,150 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+# Every job checks out into `idura_verify` rather than the default directory named
+# after the repository. Not cosmetic: `flutter build ios` in example/ cannot
+# resolve packages unless the plugin root's basename is the plugin name. The
+# reason is in DEVELOPING.md, "Clone into a directory named idura_verify".
+
+jobs:
+  dart:
+    name: Dart
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: idura_verify
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: idura_verify
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: idura_verify/.fvmrc
+          cache: true
+      - run: flutter pub get
+      # The example is a separate package, and `flutter analyze` at the root
+      # descends into it, so without this its `package:idura_verify` import is
+      # unresolved and the analyzer reports that instead of anything real.
+      - run: flutter pub get
+        working-directory: idura_verify/example
+      - name: Format
+        run: ./scripts/format.sh --check
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      - name: Test
+        run: flutter test
+      - name: Bridge matches its schema
+        run: ./scripts/verify-generated.sh
+
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: idura_verify
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: idura_verify
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: idura_verify/.fvmrc
+          cache: true
+      - name: Install ktlint
+        run: |
+          curl -sSLo /tmp/ktlint \
+            https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint
+          chmod +x /tmp/ktlint
+          sudo mv /tmp/ktlint /usr/local/bin/ktlint
+      - name: ktlint
+        run: ktlint 'android/**/*.kt' 'example/android/**/*.kt'
+      # First, because it is what writes example/android/local.properties and
+      # resolves the Flutter Gradle plugin that the unit tests below need.
+      - name: Build the example
+        run: flutter build apk --debug
+        working-directory: idura_verify/example
+      - name: Unit tests
+        run: ./gradlew :idura_verify:testDebugUnitTest
+        working-directory: idura_verify/example/android
+
+  ios:
+    name: iOS
+    # Pinned rather than macos-latest, because the Xcode and SwiftPM versions are
+    # exactly what this job is testing against. A runner image rolling underneath
+    # us should break on a bump we chose, not on a morning we didn't.
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: idura_verify
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: idura_verify
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: idura_verify/.fvmrc
+          cache: true
+      - name: Install swiftlint
+        run: brew install swiftlint
+      - name: swiftlint
+        run: swiftlint lint --strict --quiet
+      # Compiles the bridge against the real SDK and resolves the whole SwiftPM
+      # graph, which is where most of this plugin's packaging risk lives. It does
+      # *not* cover the associated-domains entitlement: --no-codesign skips
+      # ProcessProductPackaging, so the entitlement is never processed or embedded
+      # and its $(IDURA_DOMAIN) substitution is only ever proven on a device.
+      - name: Build the example
+        run: flutter build ios --no-codesign
+        working-directory: idura_verify/example
+
+  swiftpm-only:
+    name: SwiftPM-only guidance
+    # Its own job because it changes global `flutter config`, which would leak
+    # into any other step sharing the runner.
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: idura_verify
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: idura_verify/.fvmrc
+          cache: true
+      - name: A CocoaPods consumer is told what to do
+        run: |
+          set -euo pipefail
+
+          # Shipping no podspec is load-bearing: it is what makes flutter_tools
+          # name the fix instead of letting the consumer hit an unexplained link
+          # error. That is a DX promise with nothing else holding it in place, so
+          # it gets a test.
+          #
+          # A scratch app rather than example/: the example's project.pbxproj
+          # permanently carries an XCLocalSwiftPackageReference, so with SPM off
+          # Xcode fails to resolve that long before flutter_tools says anything.
+          # A freshly created app is what a consumer actually has.
+          flutter config --no-enable-swift-package-manager
+          flutter create --platforms=ios --project-name spmcheck "$RUNNER_TEMP/spmcheck"
+          cd "$RUNNER_TEMP/spmcheck"
+          flutter pub add "idura_verify:{\"path\":\"$GITHUB_WORKSPACE/idura_verify\"}"
+
+          if flutter build ios --no-codesign >build.log 2>&1; then
+            echo "error: the build succeeded, so the guidance never appeared." >&2
+            cat build.log >&2
+            exit 1
+          fi
+
+          if ! grep -q 'only compatible with Swift Package Manager' build.log; then
+            echo "error: the build failed, but not with the SwiftPM-only guidance:" >&2
+            cat build.log >&2
+            exit 1
+          fi
+
+          echo "OK: a CocoaPods consumer is told to enable Swift Package Manager."
