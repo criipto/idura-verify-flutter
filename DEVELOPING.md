@@ -35,6 +35,7 @@ CocoaPods is **not** required, and is not supported — see "iOS is SwiftPM-only
 | `scripts/format.sh` | Rewrites hand-written Dart. `--check` reports instead, for CI |
 | `scripts/generate.sh` | Regenerates the bridge from [`pigeons/messages.dart`](pigeons/messages.dart) |
 | `scripts/verify-generated.sh` | Fails if the committed bridge no longer matches the schema |
+| `scripts/bump-version.sh` | Bumps, commits and tags a release on `master`, without pushing — see "Releasing" |
 
 **Never reformat generated code.** `Messages.g.dart`, `Messages.g.kt` and
 `Messages.g.swift` are committed exactly as pigeon emits them, which is what lets
@@ -141,3 +142,21 @@ Android does run on an emulator.
 - One logical change per commit; message is title, blank line, then *why*.
 - Fix review comments with `git commit --fixup` and autosquash before merging. CI
   rejects any commit whose subject starts with `fixup!`, `amend!`, `squash!` or `wip`.
+
+## Releasing
+
+Releases are published to pub.dev by [`publish.yml`](.github/workflows/publish.yml),
+authenticated with GitHub's OIDC token, so there is no pub.dev credential to keep.
+There is no `CHANGELOG.md`: the GitHub release notes are the changelog.
+
+1. On an up-to-date `master`, run `scripts/bump-version.sh --patch` (or `--minor`,
+   `--major`). It commits the new version and tags it `v<version>`, but pushes nothing.
+2. `git push --atomic origin master v<version>`. `master` requires a pull request, so
+   this needs an admin's bypass. Pushing the tag starts the publish.
+3. If the `pub.dev` environment requires reviewers, approve the run.
+4. Write the release notes: `gh release create v<version> --verify-tag --generate-notes
+   --draft`, then edit the draft on GitHub and publish it.
+
+pub.dev only accepts the upload if the tag matches `version` exactly, and only from
+a tag push in this repository, through the `pub.dev` environment. Both are configured
+on pub.dev under the package's Admin tab, "Automated publishing".
