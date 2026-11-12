@@ -20,13 +20,15 @@ class ExampleApp extends StatelessWidget {
 
 /// One button per eID. Mock leads because it is the only flow that needs no
 /// authenticator app, so it is what to reach for when checking a fresh setup.
+/// It carries mock data so a login shows an identity the caller chose, which
+/// is also what the end-to-end test asserts came back.
 ///
 /// Every builder here takes the plainest form of its eID. The `withX()` methods
 /// requesting extra claims are left off deliberately: a scope the Idura domain
 /// has not been granted fails the login, so an example that requested them would
 /// break on any tenant but ours.
 List<({String label, Eid Function() build})> _eids() => [
-  (label: 'Mock', build: Mock.new),
+  (label: 'Mock', build: () => Mock().withMockData({'name': 'foobar'})),
   (label: 'Danish MitID', build: DanishMitID.substantial),
   (label: 'Swedish BankID', build: SwedishBankID.sameDevice),
   (label: 'Norwegian BankID', build: NorwegianBankID.substantial),
