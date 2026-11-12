@@ -2,7 +2,7 @@ name: idura_verify
 description: >-
   Accept Danish MitID, Swedish BankID, Norwegian BankID, Vipps and Freja ID
   eID logins in your Flutter app with Idura Verify.
-version: 1.0.0
+version: 1.0.1
 homepage: https://www.idura.eu
 repository: https://github.com/criipto/idura-verify-flutter
 issue_tracker: https://github.com/criipto/idura-verify-flutter/issues
