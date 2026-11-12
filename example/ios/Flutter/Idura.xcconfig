@@ -15,5 +15,5 @@ IDURA_CLIENT_ID = urn:criipto:samples:idura:verify-flutter
 
 // Without this the login callback never comes back: iOS only hands an
 // ASWebAuthenticationSession result to an app whose entitlement claims the
-// domain. Always absent on the Simulator, which is why no flow runs there.
+// domain.
 CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements

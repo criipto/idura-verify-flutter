@@ -451,10 +451,8 @@ final class FrejaIDExtendedOrPlus extends Eid {
 }
 
 /// A test eID that needs no authenticator app, so it is the only flow that runs
-/// on an Android emulator. Enable it per domain in the Idura dashboard.
-///
-/// Still impossible on the iOS Simulator: the associated-domains entitlement
-/// the callback needs is stripped there.
+/// on an Android emulator or the iOS Simulator. Enable it per domain in the
+/// Idura dashboard.
 final class Mock extends Eid {
   Mock._({
     required super.acrValues,

@@ -135,8 +135,7 @@ enum NotConfiguredCode {
   /// engines sharing an activity each construct their own. Plugin instances are
   /// per engine, so nothing the host app wrote is wrong.
   duplicateInstance,
-  /// iOS: the associated-domains entitlement is absent, which is also always
-  /// true on the Simulator.
+  /// iOS: the associated-domains entitlement is absent.
   associatedDomainsNotConfigured,
   noActivity,
 }

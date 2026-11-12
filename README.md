@@ -113,8 +113,6 @@ IDURA_CLIENT_ID = urn:my:application:identifier:XXXX
 </dict>
 ```
 
-Associated domains are stripped from Simulator builds, so on iOS every login, including the mock one, needs a physical device.
-
 ## Logging in
 
 ```dart

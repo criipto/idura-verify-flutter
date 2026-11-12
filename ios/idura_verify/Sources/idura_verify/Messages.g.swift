@@ -222,8 +222,7 @@ enum NotConfiguredCode: Int, CaseIterable {
   /// engines sharing an activity each construct their own. Plugin instances are
   /// per engine, so nothing the host app wrote is wrong.
   case duplicateInstance = 4
-  /// iOS: the associated-domains entitlement is absent, which is also always
-  /// true on the Simulator.
+  /// iOS: the associated-domains entitlement is absent.
   case associatedDomainsNotConfigured = 5
   case noActivity = 6
 }

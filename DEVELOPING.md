@@ -21,7 +21,7 @@ Beyond Flutter you need:
 | JDK 17 | The Android SDK builds with a JVM 11 target on a 17 toolchain |
 | Android SDK platform 36 | `eu.idura:verify` compiles against API 36 |
 | Xcode 16 or newer, with the iOS 17.4 SDK | The iOS SDK requires iOS 17.4 |
-| A physical iPhone | **No iOS login flow works on the Simulator** — see below |
+| A physical iPhone | For every eID but Mock: their authenticator apps do not run on the Simulator |
 | [ktlint](https://pinterest.github.io/ktlint/) 1.8.0 | Lints the Android bridge |
 | [swiftlint](https://github.com/realm/SwiftLint) | Lints the iOS bridge |
 
@@ -127,15 +127,6 @@ cd example/android && ./gradlew :app:signingReport
 The iOS App ID needs the **Associated Domains** capability enabled in the Apple
 Developer portal, and `DEVELOPMENT_TEAM` is already set to `P56KU6NT8A` on all three
 Runner configurations.
-
-## Why iOS testing needs a physical device
-
-The OAuth callback arrives through an `ASWebAuthenticationSession` HTTPS
-(associated-domain) callback, and `com.apple.developer.associated-domains` is a
-provisioned entitlement that is stripped from Simulator builds. Without it the
-session fails immediately. **Every** login flow needs a physical device signed with a
-team whose App ID has Associated Domains enabled — including the mock flow, which on
-Android does run on an emulator.
 
 ## Commit conventions
 
