@@ -1,0 +1,41 @@
+name: Publish to pub.dev
+
+# pub.dev's automated publishing, authenticated with a GitHub-signed OIDC token
+# rather than a stored credential:
+# https://dart.dev/tools/pub/automated-publishing
+#
+# Publishing a GitHub release with a tag such as v1.2.3 creates the tag and so
+# triggers this. pub.dev rejects the upload unless the tag matches both the
+# version in pubspec.yaml and the tag pattern configured on pub.dev,
+# `v{{version}}`.
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Must match "Require GitHub Actions environment" on pub.dev, so the
+    # environment's protection rules gate every publish.
+    environment: pub.dev
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Only for its side effect: it mints the OIDC token for https://pub.dev and
+      # registers it with `dart pub token add`, where Flutter's pub reads it too.
+      #
+      # Not dart-lang's reusable publish workflow: it gates on
+      # `dart pub publish --dry-run`, which exits non-zero on any warning, and
+      # pub warns on every release because there is no CHANGELOG.md. The release
+      # notes live in GitHub releases instead. `--force` below still publishes
+      # over warnings, but not over errors.
+      - uses: dart-lang/setup-dart@2286a0c042b44434fe26d292bbce8d34f7ec662b # v1.8.2
+      # After setup-dart, so Flutter's dart is the one first on PATH.
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: .fvmrc
+      - run: flutter pub get
+      - run: flutter pub publish --force

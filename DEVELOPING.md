@@ -141,3 +141,19 @@ Android does run on an emulator.
 - One logical change per commit; message is title, blank line, then *why*.
 - Fix review comments with `git commit --fixup` and autosquash before merging. CI
   rejects any commit whose subject starts with `fixup!`, `amend!`, `squash!` or `wip`.
+
+## Releasing
+
+Releases are published to pub.dev by [`publish.yml`](.github/workflows/publish.yml),
+authenticated with GitHub's OIDC token, so there is no pub.dev credential to keep.
+There is no `CHANGELOG.md`: the GitHub release notes are the changelog.
+
+1. Bump `version` in `pubspec.yaml` and merge it.
+2. Create a GitHub release on `master` with the tag `v<version>`, e.g. `v1.2.3`, and
+   write the release notes there. Publishing the release creates the tag, which
+   starts the workflow.
+3. If the `pub.dev` environment requires reviewers, approve the run.
+
+pub.dev only accepts the upload if the tag matches `version` exactly, and only from
+a tag push in this repository, through the `pub.dev` environment. Both are configured
+on pub.dev under the package's Admin tab, "Automated publishing".
