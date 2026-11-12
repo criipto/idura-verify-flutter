@@ -99,7 +99,7 @@ jobs:
       # graph, which is where most of this plugin's packaging risk lives. It does
       # *not* cover the associated-domains entitlement: --no-codesign skips
       # ProcessProductPackaging, so the entitlement is never processed or embedded
-      # and its $(IDURA_DOMAIN) substitution is only ever proven on a device.
+      # and its $(IDURA_DOMAIN) substitution is proven by e2e-ios instead.
       - name: Build the example
         run: flutter build ios --no-codesign
         working-directory: idura_verify/example
@@ -148,3 +148,146 @@ jobs:
           fi
 
           echo "OK: a CocoaPods consumer is told to enable Swift Package Manager."
+
+  # The end-to-end mock login, on each platform. Both talk to the live samples
+  # tenant, so an outage there fails these and nothing else. See DEVELOPING.md,
+  # "End-to-end tests".
+  e2e-android:
+    name: End-to-end (Android)
+    runs-on: ubuntu-latest-m
+    # A login that never returns stalls the test's own deadline, because frames
+    # barely pump while the browser covers the app.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: idura_verify
+      # The Play Store system image, Flutter and the Gradle build together run
+      # the stock runner out of disk mid-test. None of these toolchains is used.
+      - name: Free disk space
+        run: |
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/.ghcup /opt/ghc /usr/share/swift \
+            /usr/local/share/boost /opt/hostedtoolcache/CodeQL
+          df -h /
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: idura_verify/.fvmrc
+          cache: true
+      - name: Install the Patrol CLI
+        run: |
+          dart pub global activate patrol_cli 4.9.0
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+      # The Play Store image because it ships a current Chrome to host the login,
+      # where the plain google_apis images carry an old one. The same image
+      # idura-verify-android's own mock login runs on.
+      - name: AVD cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-36-google-apis-playstore-x86_64
+      - name: Create AVD snapshot
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis_playstore
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot."
+      # Until its first run is done, Chrome shows a full-screen prompt in place of
+      # the login tab and the callback never comes back. --disable-fre skips it;
+      # Chrome only reads /data/local/tmp/chrome-command-line while it is the debug
+      # app, and drops the first token as argv[0]. idura-verify-android's
+      # IduraTestRunner does the same from its instrumentation runner. Each
+      # script line runs on its own, hence the one-line logcat dump on failure:
+      # the emulator is gone by the time a later step could look. AppAuth logs
+      # only when its tag is made loggable, and it is the one place that says
+      # whether a login the app saw as cancelled was a real redirect or not.
+      - name: Mock login
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 36
+          target: google_apis_playstore
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          working-directory: idura_verify/example
+          script: |
+            adb shell "echo '_ --disable-fre --no-first-run --no-default-browser-check' > /data/local/tmp/chrome-command-line && chmod 0644 /data/local/tmp/chrome-command-line"
+            adb shell am set-debug-app --persistent com.android.chrome
+            adb shell am force-stop com.android.chrome
+            adb shell setprop log.tag.AppAuth VERBOSE
+            adb logcat -c
+            adb logcat -v time > /tmp/logcat.txt 2>&1 < /dev/null &
+            patrol test --target patrol_test/mock_login_test.dart --device emulator-5554 || { grep -E 'ActivityTaskManager|IntentFilterVer|AppLinks|BulkAsyncVerifier|DomainVerif|IduraVerify|AppAuth|AndroidRuntime|flutter' /tmp/logcat.txt | tail -400; exit 1; }
+
+  e2e-ios:
+    name: End-to-end (iOS)
+    runs-on: macos-26
+    # Non-blocking: on GitHub's macOS runners the Simulator's associated-domains
+    # check (swcd) never finishes fetching the tenant's apple-app-site-association,
+    # neither through Apple's CDN nor directly, so the login fails with
+    # associatedDomainsNotConfigured through no fault of the code under test.
+    # @criipto/verify-expo hit the same and moved its iOS e2e off these runners.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: idura_verify/example
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: idura_verify
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          flutter-version-file: idura_verify/.fvmrc
+          cache: true
+      - name: Install the Patrol CLI
+        run: |
+          dart pub global activate patrol_cli 4.9.0
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+      # A fresh device by UDID rather than a name: the image carries an
+      # "iPhone 17 Pro" for every installed runtime, so the name is ambiguous.
+      #
+      # Retries only an associatedDomainsNotConfigured failure, after a pause:
+      # swcd fetches the association file lazily, so a later attempt can find it
+      # in place when the first could not. Any other failure fails straight away.
+      - name: Mock login
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          udid=$(xcrun simctl create e2e "iPhone 17 Pro")
+          echo "udid=$udid" >> "$GITHUB_ENV"
+          xcrun simctl boot "$udid"
+          for attempt in 1 2 3 4 5; do
+            if patrol test --target patrol_test/mock_login_test.dart --device "$udid" 2>&1 | tee /tmp/e2e.log; then
+              echo "Passed on attempt $attempt"
+              exit 0
+            fi
+            grep -q associatedDomainsNotConfigured /tmp/e2e.log || exit 1
+            echo "::warning::Attempt $attempt failed with associatedDomainsNotConfigured"
+            sleep 30
+          done
+          exit 1
+      # swcd is what decides whether the app may claim the login callback, so its
+      # log is where an associated-domains failure explains itself.
+      - name: Associated-domains log
+        if: failure() && env.udid
+        run: |
+          xcrun simctl spawn "$udid" log show --last 15m --style compact \
+            --predicate 'process == "swcd" OR subsystem == "com.apple.AuthenticationServices"'

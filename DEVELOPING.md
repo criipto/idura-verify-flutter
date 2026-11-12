@@ -128,6 +128,43 @@ The iOS App ID needs the **Associated Domains** capability enabled in the Apple
 Developer portal, and `DEVELOPMENT_TEAM` is already set to `P56KU6NT8A` on all three
 Runner configurations.
 
+## End-to-end tests
+
+The tests in [`example/patrol_test/`](example/patrol_test/) log in through the
+example app, the bridge, the native SDK, the browser and the live tenant above. They
+run under [Patrol](https://patrol.leancode.co), whose native automation reaches the
+browser and authenticator apps that a plain Flutter test cannot. Install its CLI
+once, and put pub's global bin on `PATH`:
+
+```sh
+fvm dart pub global activate patrol_cli 4.9.0   # the version CI uses
+export PATH="$PATH:$HOME/.pub-cache/bin"
+```
+
+### Mock login
+
+[`mock_login_test.dart`](example/patrol_test/mock_login_test.dart) taps the example's
+Mock button and waits for the login to come back. CI runs it on an Android emulator
+and on the iOS Simulator on every pull request, so an outage of the samples tenant can
+fail an unrelated PR — re-run it.
+
+Only the Android run gates a merge. On GitHub's macOS runners the Simulator rarely
+manages to fetch the tenant's apple-app-site-association file in time, so the iOS login
+fails with `associatedDomainsNotConfigured` more often than not. The job retries that
+failure, and only that one, up to five times, and logs `swcd` when it gives up, but a
+red iOS e2e on its own is not a reason to hold a PR. It
+passes locally on a fresh Simulator, which is where to check an iOS change.
+
+```sh
+cd example
+patrol test --target patrol_test/mock_login_test.dart --device <device id>   # from `fvm flutter devices`
+```
+
+The mock login completes without anyone touching the browser, which is what lets it
+run unattended. Every other eID needs its authenticator app, and those apps refuse
+to run on an emulator or the Simulator, so they stay on a physical device and
+untested in CI. So does cancellation.
+
 ## Commit conventions
 
 - One logical change per commit; message is title, blank line, then *why*.
