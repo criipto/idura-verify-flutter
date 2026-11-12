@@ -32,6 +32,30 @@ public class IduraVerifyPlugin: NSObject, FlutterPlugin, IduraVerifyHostApi {
     }
     IduraVerifyHostApiSetup.setUp(binaryMessenger: registrar.messenger(), api: instance)
     registrar.publish(instance)
+
+    // Both, because an app receives Universal Links through whichever of the two
+    // lifecycles it adopted, and Flutter asks plugins on either before routing.
+    registrar.addApplicationDelegate(instance)
+    registrar.addSceneDelegate(instance)
+  }
+
+  /// Claims the login's return link so Flutter's own deep linking never sees it.
+  ///
+  /// Deep linking is on unless the app opts out (`FlutterDeepLinkingEnabled`), and an
+  /// app has no route for this link. Flutter hands a Universal Link its router could not
+  /// place back to iOS, which opens it in Safari: after an app switch the user would
+  /// land on the callback page in the browser instead of finishing the login. A native
+  /// app ignores the link, so the SDK expects nothing more from us than taking it.
+  private func claimsReturnLink(_ userActivity: NSUserActivity) -> Bool {
+    isLoginReturnLink(userActivity.webpageURL, domain: info(infoDomainKey))
+  }
+
+  public func application(
+    _ application: UIApplication,
+    continue userActivity: NSUserActivity,
+    restorationHandler: @escaping ([Any]) -> Void
+  ) -> Bool {
+    claimsReturnLink(userActivity)
   }
 
   /// Not `public`, for the same reason `login` is not.
@@ -95,5 +119,11 @@ public class IduraVerifyPlugin: NSObject, FlutterPlugin, IduraVerifyHostApi {
     let created = try constructSdk(info)
     sdk = created
     return created
+  }
+}
+
+extension IduraVerifyPlugin: FlutterSceneLifeCycleDelegate {
+  public func scene(_ scene: UIScene, continue userActivity: NSUserActivity) -> Bool {
+    claimsReturnLink(userActivity)
   }
 }

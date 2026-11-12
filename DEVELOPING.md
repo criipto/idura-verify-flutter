@@ -97,6 +97,36 @@ their plugin directory (`idura_verify-1.2.3` in the pub cache) is not an ancesto
 their project, so it is a plain dependency and never a root. `pub` canonicalises
 symlinked path dependencies, so a symlink inside `example/` does not work around it.
 
+## What the example's tenant has registered
+
+The example app logs in against the `samples-flutter.test.idura.broker` tenant, which has to
+know each of these before a callback will come back. Change one and logins stop
+working with no useful error.
+
+| | Value |
+| --- | --- |
+| Client id | `urn:criipto:samples:idura:verify-flutter` |
+| Android package name | `eu.idura.verify.flutter.example` |
+| Android signing cert SHA-256 | `8D:42:58:35:AE:15:03:2D:D6:BD:6B:76:79:CC:61:CF:F1:DB:4C:28:0C:F2:92:B4:19:28:77:FA:46:DE:2B:77` |
+| iOS bundle id | `eu.idura.verify.flutter.example` |
+| iOS App ID (team + bundle) | `P56KU6NT8A.eu.idura.verify.flutter.example` |
+
+The Android SHA-256 comes from `example/android/app/debug.keystore`, which is
+**deliberately checked in** — it is the stock Android debug keystore, password
+`android`, and signs nothing that is published. Digital Asset Links binds a
+(package name, cert SHA-256) pair, so a per-developer `~/.android/debug.keystore`
+would mean the App Link that carries the login callback only verified for whoever
+happened to register their own cert. It is byte-for-byte the keystore
+`idura-verify-android`'s example checks in, for the same reason. Confirm it with:
+
+```sh
+cd example/android && ./gradlew :app:signingReport
+```
+
+The iOS App ID needs the **Associated Domains** capability enabled in the Apple
+Developer portal, and `DEVELOPMENT_TEAM` is already set to `P56KU6NT8A` on all three
+Runner configurations.
+
 ## Why iOS testing needs a physical device
 
 The OAuth callback arrives through an `ASWebAuthenticationSession` HTTPS

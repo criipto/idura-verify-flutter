@@ -12,3 +12,8 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Except this one, deliberately. It is the standard Android debug keystore and it
+# signs nothing that ships; checking it in is what makes the signing-cert SHA-256
+# the same everywhere, which App Link verification requires. See
+# app/build.gradle.kts.
+!app/debug.keystore

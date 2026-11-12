@@ -12,16 +12,23 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-if ! git diff --quiet -- pigeons lib/src/messages.g.dart \
-  android/src/main/kotlin/eu/idura/verify/flutter/Messages.g.kt \
-  ios/idura_verify/Sources/idura_verify/Messages.g.swift; then
+generated=(
+  lib/src/messages.g.dart
+  android/src/main/kotlin/eu/idura/verify/flutter/Messages.g.kt
+  ios/idura_verify/Sources/idura_verify/Messages.g.swift
+)
+
+if ! git diff --quiet -- pigeons "${generated[@]}"; then
   echo "error: uncommitted changes to the schema or its output; commit or stash first" >&2
   exit 1
 fi
 
 ./scripts/generate.sh
 
-if ! git diff --exit-code --stat; then
+# Scoped to what generate.sh writes. An unscoped diff reports any unrelated dirty
+# file in the tree as a stale bridge, which is a confusing lie while you are in
+# the middle of unrelated work.
+if ! git diff --exit-code --stat -- "${generated[@]}"; then
   cat >&2 <<'MSG'
 
 error: the committed bridge is stale.

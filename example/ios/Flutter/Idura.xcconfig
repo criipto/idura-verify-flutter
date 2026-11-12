@@ -1,0 +1,18 @@
+// The only place the example's Idura Verify configuration is written on iOS, so
+// Info.plist and Runner.entitlements cannot end up disagreeing about the domain.
+// The Android side reaches the same guarantee with two Gradle
+// manifestPlaceholders.
+//
+// Included from Debug.xcconfig and Release.xcconfig rather than set on the
+// target, so the values live in git rather than buried in project.pbxproj, and
+// so CODE_SIGN_ENTITLEMENTS reaches Runner only — the RunnerTests
+// configurations have no base configuration to pick it up from.
+//
+// Same tenant the native Android and iOS examples use.
+IDURA_DOMAIN = samples-flutter.test.idura.broker
+IDURA_CLIENT_ID = urn:criipto:samples:idura:verify-flutter
+
+// Without this the login callback never comes back: iOS only hands an
+// ASWebAuthenticationSession result to an app whose entitlement claims the
+// domain. Always absent on the Simulator, which is why no flow runs there.
+CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements
