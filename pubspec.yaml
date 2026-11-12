@@ -26,6 +26,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # The generated bridge imports it. Flutter pins meta exactly, and 3.44.0, our
+  # floor, pins 1.18.0, so no lower version is reachable anyway.
+  meta: ^1.18.0
 
 dev_dependencies:
   flutter_test:
