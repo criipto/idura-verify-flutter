@@ -165,6 +165,58 @@ run unattended. Every other eID needs its authenticator app, and those apps refu
 to run on an emulator or the Simulator, so they stay on a physical device and
 untested in CI. So does cancellation.
 
+### MitID login, local only
+
+[`mitid_test.dart`](example/patrol_test/mitid_test.dart) runs a real Danish MitID
+login on a physical device: the hosted page, the switch into the MitID test app, and
+back. It skips itself unless the test user is passed in, so it never runs by accident.
+
+The device needs the MitID test app installed and enrolled for the test user. Ask a
+teammate for the user id and PIN; they go in as `--dart-define`s, never in git.
+
+**Android:**
+
+```sh
+cd example
+adb shell am force-stop com.android.chrome   # a tab left open from a failed run blocks the next
+patrol test --device <serial> --target patrol_test/mitid_test.dart \
+  --dart-define=MITID_USER_ID=... --dart-define=MITID_PIN=... \
+  --dart-define=EXPECT_TAB=auth   # optional: auth or custom
+```
+
+`EXPECT_TAB` asserts which tab the SDK opened, read from the SDK's own `IduraVerify:
+Using …, AuthTab|CustomTab` log line. The SDK picks an Auth Tab whenever the browser
+supports one, so testing the Custom Tab path means a browser that does not: on a test
+phone, `adb shell pm uninstall-system-updates com.android.chrome` rolls Chrome back to
+the factory image, and the Play Store updates it again.
+
+On Chrome before 117 the SDK returns from the MitID app to a page with a "Continue to
+…" button instead of straight to the app. `EXPECT_CONTINUE=true` taps it; without it
+the run hangs on that page.
+
+**iOS:** on a physical device `patrol test` does not pass an architecture, which
+leaves the run unable to launch, so build and run in two steps:
+
+```sh
+cd example
+patrol build ios --release --target patrol_test/mitid_test.dart \
+  --dart-define=MITID_USER_ID=... --dart-define=MITID_PIN=...
+xcodebuild test-without-building \
+  -xctestrun build/ios_integ/Build/Products/Runner_iphoneos*-arm64.xctestrun \
+  -destination 'platform=iOS,id=<udid>,arch=arm64' \
+  -collect-test-diagnostics never   # otherwise it stalls on a sudo prompt
+```
+
+Like every iOS build, this needs the checkout in a directory named `idura_verify`.
+
+**When a run fails before it reaches the app:**
+
+- *Chrome's first-run screens* ("Make Chrome your own", notification prompts) show
+  inside the tab after Chrome is installed, reset or updated, and hide the hosted page.
+  Open Chrome once by hand and dismiss them.
+- *MitID CAP008, "used your user ID in two places at the same time"* means a failed run
+  left a login pending for the same user. Wait for it to expire and run again.
+
 ## Commit conventions
 
 - One logical change per commit; message is title, blank line, then *why*.
