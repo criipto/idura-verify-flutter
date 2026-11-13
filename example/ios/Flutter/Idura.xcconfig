@@ -4,9 +4,10 @@
 // manifestPlaceholders.
 //
 // Included from Debug.xcconfig and Release.xcconfig rather than set on the
-// target, so the values live in git rather than buried in project.pbxproj, and
-// so CODE_SIGN_ENTITLEMENTS reaches Runner only — the RunnerTests
-// configurations have no base configuration to pick it up from.
+// target, so the values live in git rather than buried in project.pbxproj.
+// RunnerUITests, which Patrol needs on these same configurations, clears
+// CODE_SIGN_ENTITLEMENTS on the target: its bundle id has no Associated Domains
+// capability, so signing it with Runner's entitlements fails.
 //
 // Same tenant the native Android and iOS examples use.
 IDURA_DOMAIN = samples-flutter.test.idura.broker
