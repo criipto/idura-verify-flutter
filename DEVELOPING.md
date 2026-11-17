@@ -21,7 +21,7 @@ Beyond Flutter you need:
 | JDK 17 | The Android SDK builds with a JVM 11 target on a 17 toolchain |
 | Android SDK platform 36 | `eu.idura:verify` compiles against API 36 |
 | Xcode 16 or newer, with the iOS 17.4 SDK | The iOS SDK requires iOS 17.4 |
-| A physical iPhone | **No iOS login flow works on the Simulator** — see below |
+| A physical iPhone | For every eID but Mock: their authenticator apps do not run on the Simulator |
 | [ktlint](https://pinterest.github.io/ktlint/) 1.8.0 | Lints the Android bridge |
 | [swiftlint](https://github.com/realm/SwiftLint) | Lints the iOS bridge |
 
@@ -128,14 +128,94 @@ The iOS App ID needs the **Associated Domains** capability enabled in the Apple
 Developer portal, and `DEVELOPMENT_TEAM` is already set to `P56KU6NT8A` on all three
 Runner configurations.
 
-## Why iOS testing needs a physical device
+## End-to-end tests
 
-The OAuth callback arrives through an `ASWebAuthenticationSession` HTTPS
-(associated-domain) callback, and `com.apple.developer.associated-domains` is a
-provisioned entitlement that is stripped from Simulator builds. Without it the
-session fails immediately. **Every** login flow needs a physical device signed with a
-team whose App ID has Associated Domains enabled — including the mock flow, which on
-Android does run on an emulator.
+The tests in [`example/patrol_test/`](example/patrol_test/) log in through the
+example app, the bridge, the native SDK, the browser and the live tenant above. They
+run under [Patrol](https://patrol.leancode.co), whose native automation reaches the
+browser and authenticator apps that a plain Flutter test cannot. Install its CLI
+once, and put pub's global bin on `PATH`:
+
+```sh
+fvm dart pub global activate patrol_cli 4.9.0   # the version CI uses
+export PATH="$PATH:$HOME/.pub-cache/bin"
+```
+
+### Mock login
+
+[`mock_login_test.dart`](example/patrol_test/mock_login_test.dart) taps the example's
+Mock button and waits for the login to come back. CI runs it on an Android emulator
+and on the iOS Simulator on every pull request, so an outage of the samples tenant can
+fail an unrelated PR — re-run it.
+
+Only the Android run gates a merge. On GitHub's macOS runners the Simulator rarely
+manages to fetch the tenant's apple-app-site-association file in time, so the iOS login
+fails with `associatedDomainsNotConfigured` more often than not. The job retries that
+failure, and only that one, up to five times, and logs `swcd` when it gives up, but a
+red iOS e2e on its own is not a reason to hold a PR. It
+passes locally on a fresh Simulator, which is where to check an iOS change.
+
+```sh
+cd example
+patrol test --target patrol_test/mock_login_test.dart --device <device id>   # from `fvm flutter devices`
+```
+
+The mock login completes without anyone touching the browser, which is what lets it
+run unattended. Every other eID needs its authenticator app, and those apps refuse
+to run on an emulator or the Simulator, so they stay on a physical device and
+untested in CI. So does cancellation.
+
+### MitID login, local only
+
+[`mitid_test.dart`](example/patrol_test/mitid_test.dart) runs a real Danish MitID
+login on a physical device: the hosted page, the switch into the MitID test app, and
+back. It skips itself unless the test user is passed in, so it never runs by accident.
+
+The device needs the MitID test app installed and enrolled for the test user. Ask a
+teammate for the user id and PIN; they go in as `--dart-define`s, never in git.
+
+**Android:**
+
+```sh
+cd example
+adb shell am force-stop com.android.chrome   # a tab left open from a failed run blocks the next
+patrol test --device <serial> --target patrol_test/mitid_test.dart \
+  --dart-define=MITID_USER_ID=... --dart-define=MITID_PIN=... \
+  --dart-define=EXPECT_TAB=auth   # optional: auth or custom
+```
+
+`EXPECT_TAB` asserts which tab the SDK opened, read from the SDK's own `IduraVerify:
+Using …, AuthTab|CustomTab` log line. The SDK picks an Auth Tab whenever the browser
+supports one, so testing the Custom Tab path means a browser that does not: on a test
+phone, `adb shell pm uninstall-system-updates com.android.chrome` rolls Chrome back to
+the factory image, and the Play Store updates it again.
+
+On Chrome before 117 the SDK returns from the MitID app to a page with a "Continue to
+…" button instead of straight to the app. `EXPECT_CONTINUE=true` taps it; without it
+the run hangs on that page.
+
+**iOS:** on a physical device `patrol test` does not pass an architecture, which
+leaves the run unable to launch, so build and run in two steps:
+
+```sh
+cd example
+patrol build ios --release --target patrol_test/mitid_test.dart \
+  --dart-define=MITID_USER_ID=... --dart-define=MITID_PIN=...
+xcodebuild test-without-building \
+  -xctestrun build/ios_integ/Build/Products/Runner_iphoneos*-arm64.xctestrun \
+  -destination 'platform=iOS,id=<udid>,arch=arm64' \
+  -collect-test-diagnostics never   # otherwise it stalls on a sudo prompt
+```
+
+Like every iOS build, this needs the checkout in a directory named `idura_verify`.
+
+**When a run fails before it reaches the app:**
+
+- *Chrome's first-run screens* ("Make Chrome your own", notification prompts) show
+  inside the tab after Chrome is installed, reset or updated, and hide the hosted page.
+  Open Chrome once by hand and dismiss them.
+- *MitID CAP008, "used your user ID in two places at the same time"* means a failed run
+  left a login pending for the same user. Wait for it to expire and run again.
 
 ## Commit conventions
 

@@ -30,8 +30,6 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
-  integration_test:
-    sdk: flutter
   flutter_test:
     sdk: flutter
 
@@ -41,6 +39,15 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  patrol: ^4.11.0
+
+# Read by the patrol CLI, which drives the local-only tests in patrol_test/.
+patrol:
+  app_name: idura_verify_example
+  android:
+    package_name: eu.idura.verify.flutter.example
+  ios:
+    bundle_id: eu.idura.verify.flutter.example
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

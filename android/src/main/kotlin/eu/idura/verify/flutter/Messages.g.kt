@@ -250,10 +250,7 @@ enum class NotConfiguredCode(val raw: Int) {
    * per engine, so nothing the host app wrote is wrong.
    */
   DUPLICATE_INSTANCE(4),
-  /**
-   * iOS: the associated-domains entitlement is absent, which is also always
-   * true on the Simulator.
-   */
+  /** iOS: the associated-domains entitlement is absent. */
   ASSOCIATED_DOMAINS_NOT_CONFIGURED(5),
   NO_ACTIVITY(6);
 

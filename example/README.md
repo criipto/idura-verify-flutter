@@ -2,7 +2,7 @@
 
 This example application shows you how to integrate the Idura Verify Flutter plugin.
 
-Note that eIDs which use authenticator apps (Danish MitID, Swedish and Norwegian BankID) cannot be used in a simulator. On iOS no login works in the Simulator at all, including the mock one, because associated domains are stripped from Simulator builds. So in order to test the full experience, you should have access to a physical Android or iOS device.
+Note that eIDs which use authenticator apps (Danish MitID, Swedish and Norwegian BankID) cannot be used in a simulator. So in order to test the full experience, you should have access to a physical Android or iOS device.
 
 1. Clone this repo into a directory named `idura_verify`. With any other name `flutter build ios` fails to resolve packages; see [DEVELOPING.md](../DEVELOPING.md#clone-into-a-directory-named-idura_verify).
 2. Create a domain in the [Idura dashboard](https://dashboard.idura.app/domains), if you haven't done so already.

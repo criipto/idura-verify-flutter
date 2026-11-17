@@ -92,7 +92,7 @@ dependencies {
   // screens should see eu.idura.verify.* on their own compile classpath rather
   // than having to declare the same dependency twice at a version we might
   // disagree with.
-  api("eu.idura:verify:2.0.8")
+  api("eu.idura:verify:2.1.0")
 
   // Pigeon's generated code imports kotlinx.coroutines directly for the @async
   // method, so we declare it rather than leaning on the transitive copy that

@@ -47,6 +47,10 @@ android {
     versionCode = flutter.versionCode
     versionName = flutter.versionName
 
+    // Patrol's runner, for the local-only tests in patrol_test/.
+    testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
+    testInstrumentationRunnerArguments["clearPackageData"] = "true"
+
     // The only place Idura Verify is configured. Both values land in manifest
     // placeholders that eu.idura:verify and idura_verify leave unresolved — the
     // SDK's for its redirect activity's android:host, the plugin's for the
@@ -68,6 +72,14 @@ android {
       signingConfig = signingConfigs.getByName("debug")
     }
   }
+
+  testOptions {
+    execution = "ANDROIDX_TEST_ORCHESTRATOR"
+  }
+}
+
+dependencies {
+  androidTestUtil("androidx.test:orchestrator:1.5.1")
 }
 
 kotlin {
